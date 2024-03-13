@@ -1,6 +1,6 @@
 <?php
 
-function define_database($conn) {
+function define_database($conn) { //generates database and initial tables
     //create database
     $stmt = "CREATE DATABASE IF NOT EXISTS CP476_PROJECT";
     $conn->query($stmt);
@@ -11,7 +11,7 @@ function define_database($conn) {
 
     //create tables
     $stmt = "CREATE TABLE IF NOT EXISTS NAMES (
-        STUDENT_ID INT PRIMARY KEY,
+        NAME_ID INT PRIMARY KEY,
         STUDENT_NAME VARCHAR(200) NOT NULL
     )";
     $conn->query($stmt);
@@ -24,23 +24,12 @@ function define_database($conn) {
         TEST_3 FLOAT NOT NULL,
         TEST_FINAL FLOAT NOT NULL,
         PRIMARY KEY (STUDENT_ID, COURSE_CODE),
-        FOREIGN KEY (STUDENT_ID) REFERENCES NAMES(STUDENT_ID)
-    )";
-    $conn->query($stmt);
-
-    $stmt = "CREATE TABLE IF NOT EXISTS FINAL_GRADES (
-        STUDENT_ID INT NOT NULL,
-        COURSE_CODE VARCHAR(200) NOT NULL,
-        STUDENT_NAME VARCHAR(200) NOT NULL,
-        FINAL_GRADE FLOAT NOT NULL,
-        PRIMARY KEY (STUDENT_ID, COURSE_CODE),
-        FOREIGN KEY (STUDENT_ID, COURSE_CODE) REFERENCES COURSE_GRADES(STUDENT_ID, COURSE_CODE),
-        FOREIGN KEY (STUDENT_ID) REFERENCES NAMES(STUDENT_ID)
+        FOREIGN KEY (STUDENT_ID) REFERENCES NAMES(NAME_ID)
     )";
     $conn->query($stmt);
 }
 
-function parse_data_files($conn, $name_file_path, $course_file_path) {
+function parse_data_files($conn, $name_file_path, $course_file_path) { //parses data files
     //init variables for parameter binding
     $id = 0;
     $name = "John Doe";
@@ -55,7 +44,7 @@ function parse_data_files($conn, $name_file_path, $course_file_path) {
     $conn->query($stmt);
 
     //read and parse NameFile.txt
-    $stmt = $conn->prepare("INSERT INTO NAMES (STUDENT_ID, STUDENT_NAME) VALUES (?,?)");
+    $stmt = $conn->prepare("INSERT INTO NAMES (NAME_ID, STUDENT_NAME) VALUES (?,?)");
     $stmt->bind_param("is", $id, $name);
 
     $file = fopen($name_file_path, "r");
@@ -90,7 +79,44 @@ function parse_data_files($conn, $name_file_path, $course_file_path) {
     $stmt = "DELETE FROM COURSE_GRADES WHERE STUDENT_ID=0";
     $conn->query($stmt);
 
-    $stmt = "DELETE FROM NAMES WHERE STUDENT_ID=0";
+    $stmt = "DELETE FROM NAMES WHERE NAME_ID=0";
+    $conn->query($stmt);
+}
+
+function calculate_final_grades($conn) { //generates final grades table
+    //switch to correct database
+    $stmt = "USE CP476_PROJECT";
+    $conn->query($stmt);
+
+    //create table
+    $stmt = "CREATE TABLE FINAL_GRADES AS SELECT * FROM NAMES FULL JOIN COURSE_GRADES ON NAME_ID=STUDENT_ID";
+    $conn->query($stmt);
+
+    //set primary and foreign keys
+    $stmt = "ALTER TABLE FINAL_GRADES ADD PRIMARY KEY (STUDENT_ID, COURSE_CODE)";
+    $conn->query($stmt);
+
+    $stmt = "ALTER TABLE FINAL_GRADES ADD CONSTRAINT FK1 FOREIGN KEY (STUDENT_ID) REFERENCES NAMES(NAME_ID)";
+    $conn->query($stmt);
+
+    $stmt = "ALTER TABLE FINAL_GRADES ADD CONSTRAINT FK2 FOREIGN KEY (STUDENT_ID, COURSE_CODE) REFERENCES COURSE_GRADES(STUDENT_ID, COURSE_CODE)";
+    $conn->query($stmt);
+    
+    //create final grades column
+    $stmt = "ALTER TABLE FINAL_GRADES ADD COLUMN FINAL_GRADE FLOAT NOT NULL";
+    $conn->query($stmt);
+
+    $stmt = "UPDATE FINAL_GRADES SET FINAL_GRADE = 0.2*TEST_1 + 0.2*TEST_2 + 0.2*TEST_3 + 0.4*TEST_FINAL";
+    $conn->query($stmt);
+
+    //drop and rename columns
+    $stmt = "ALTER TABLE FINAL_GRADES DROP COLUMN NAME_ID, DROP COLUMN TEST_1, DROP COLUMN TEST_2, DROP COLUMN TEST_3, DROP COLUMN TEST_FINAL";
+    $conn->query($stmt);
+
+    $stmt = "ALTER TABLE FINAL_GRADES RENAME COLUMN STUDENT_ID TO ID";
+    $conn->query($stmt);
+
+    $stmt = "ALTER TABLE FINAL_GRADES RENAME COLUMN STUDENT_NAME TO NAME";
     $conn->query($stmt);
 }
 
