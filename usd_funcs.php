@@ -1,6 +1,6 @@
 <?php
 
-function searchStudentById($id, $conn) {
+function searchStudent($id, $conn) {
     $stmt = $conn->prepare("SELECT name FROM NameTable WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
