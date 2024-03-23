@@ -1,3 +1,5 @@
+<?php
+
 function searchStudentById($id, $conn) {
     $stmt = $conn->prepare("SELECT name FROM NameTable WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -68,3 +70,5 @@ function updateStudent($id, $newName, $course, $grades, $conn) {
     }
     $stmt->close();
 }
+
+?>
