@@ -1,6 +1,7 @@
 <?php
 
-function define_database($conn) { //generates database and initial tables
+function define_database() { //generates database and initial tables
+    include 'config.php'; 
     //create database
     $stmt = "CREATE DATABASE IF NOT EXISTS CP476_PROJECT";
     $result = $conn->query($stmt);
@@ -48,8 +49,76 @@ function define_database($conn) { //generates database and initial tables
         exit;
     }
 }
+function user_login_table(){
+    include 'config.php'; 
+    // SQL to create user_login table
+    $stmt = "CREATE TABLE IF NOT EXISTS user_login (
+        id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(30) NOT NULL,
+        password VARCHAR(255) NOT NULL
+    )";
+    $result = $conn->query($stmt);
+    
+    if ($result === FALSE) {
+        echo "FAILED: ". $conn->error;
+        exit;
+    }
+}
+function user_registration(){
+    include 'config.php'; 
+    $username = $_POST['username'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
+    $sql = "INSERT INTO user_login (username, password) VALUES ('$username', '$password')";
+    if ($conn->query($sql) === TRUE) {
+        echo '<script type="text/javascript"> window.onload = function () { alert("Welcome"); } </script>'; 
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+}
+function user_login(){
+    include 'config.php'; 
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    $sql = "SELECT * FROM user_login WHERE username='$username'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows == 1) {
+        $row = $result->fetch_assoc();
+        if (password_verify($password, $row['password'])) {
+            echo "Login successful";
+        } else {
+            echo "Incorrect password";
+        }
+    } else {
+        echo "User not found";
+    }
+}
+function verify_user(){
+    include 'config.php'; 
+        // Retrieve form data
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+        
+        // Check if username already exists
+        $sql_check = "SELECT * FROM user_login WHERE username='$username'";
+        $result_check = $conn->query($sql_check);
+        if ($result_check->num_rows > 0) {
+            echo "<p class='error-message'>Username already exists. Please choose a different one.</p>";
+        } else {
+        // SQL to insert data into database
+        $sql = "INSERT INTO user_login (username, password) VALUES ('$username', '$password')";
+
+        if ($conn->query($sql) === TRUE) {
+            header("Location: signin.php");
+        } else {
+            echo "Error: " . $sql . "<br>" . $conn->error;
+        }
+    }
+}
 function parse_data_files($conn, $name_file_path, $course_file_path) { //parses data files
+    include 'config.php'; 
     //init variables for parameter binding
     $id = 0;
     $name = "John Doe";
@@ -117,8 +186,8 @@ function parse_data_files($conn, $name_file_path, $course_file_path) { //parses 
         exit;
     }
 }
-
 function calculate_final_grades($conn) { //generates final grades table
+    include 'config.php'; 
     //switch to correct database
     $stmt = "USE CP476_PROJECT";
     $result = $conn->query($stmt);
