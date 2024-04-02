@@ -45,6 +45,16 @@ function deleteStudent($id, $conn) {
         echo "Error deleting student from course_grades: " . $stmt->error . "\n";
     }
     $stmt->close();
+
+    $stmt = $conn->prepare("DELETE FROM final_grades WHERE ID = ?");
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        echo "Student deleted from final_grades.\n";
+    } else {
+        echo "Error deleting student from final_grades: " . $stmt->error . "\n";
+    }
+    $stmt->close();
 }
 
 function updateStudent($id, $newName, $courseCode, $grades, $conn) {
