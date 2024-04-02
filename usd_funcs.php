@@ -19,10 +19,21 @@ function searchStudent($id, $conn) {
         while ($course = $result->fetch_assoc()) {
             echo "Course: " . $course['COURSE_CODE'] . ", Grades: " . $course['TEST_1'] . ", " . $course['TEST_2'] . ", " . $course['TEST_3'] . ", " . $course['TEST_FINAL'] . "\n";
         }
+        $stmt->close();
+        
+        echo "Final Grades:\n";
+        $stmt = $conn->prepare("SELECT NAME, COURSE_CODE, FINAL_GRADE FROM final_grades WHERE ID = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($finalGrade = $result->fetch_assoc()) {
+            echo "Name: " . $finalGrade['NAME'] . ", Course Code: " . $finalGrade['COURSE_CODE'] . ", Final Grade: " . $finalGrade['FINAL_GRADE'] . "\n";
+        }
+        $stmt->close();
     } else {
         echo "Student not found.\n";
     }
-    $stmt->close();
 }
 
 function deleteStudent($id, $conn) {
@@ -73,6 +84,15 @@ function updateStudent($id, $newName, $courseCode, $grades, $conn) {
         echo "Course and grades updated.\n";
     } else {
         echo "Error updating course and grades: " . $stmt->error . "\n";
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare("UPDATE final_grades SET FINAL_GRADE = ?, NAME = ? WHERE ID = ? AND COURSE_CODE = ?");
+    $stmt->bind_param("dsis", $finalGrade, $newName, $id, $course);
+    if ($stmt->execute()) {
+        echo "Final grade updated in final_grades.\n";
+    } else {
+        echo "Error updating final grade in final_grades: " . $stmt->error . "\n";
     }
     $stmt->close();
 }
